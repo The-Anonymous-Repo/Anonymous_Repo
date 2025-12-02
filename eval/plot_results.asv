@@ -1,0 +1,119 @@
+clear;
+close all;
+
+% Settings results_dir = 'Results_eval';
+files = dir(fullfile(results_dir, '*.csv'));
+
+if isempty (files)
+  error('No CSV files found in %s', results_dir);
+end
+
+    % Initialize data structures methods = {};
+results = struct();
+
+% Load data fprintf('Loading results from %s...\n', results_dir);
+for  i = 1 : length(files) filename = files(i).name;
+[ ~, name, ~] = fileparts(filename);
+
+% Clean up method name(optional) name = strrep(name, '->', '-');
+methods{end + 1} = name;
+
+filepath = fullfile(results_dir, filename);
+T = readtable(filepath);
+
+results(i).name = name;
+results(i).T = T;
+
+% Extract Average row avg_idx = find(strcmp(T.Scene, 'Average'));
+if  ~isempty(avg_idx) results(i).avg = T(avg_idx, :);
+else
+  warning('No Average row found in %s', filename);
+results(i).avg = [];
+end 
+end
+
+    % Define metrics to plot metrics_groups = {
+    {'CPSNR_S0', 'CPSNR_S1', 'CPSNR_S2', 'CPSNR_DOLP'}, 'CPSNR (dB)';
+{'SSIM_S0', 'SSIM_S1', 'SSIM_S2', 'SSIM_DOLP'}, 'SSIM';
+{'AngleError'}, {'Angle Error (deg)'}
+;
+
+% Plot 1: Average Metrics Comparison
+for g = 1:size(metrics_groups, 1)
+    current_metrics = metrics_groups{g, 1};
+y_label_text = metrics_groups{g, 2};
+
+figure('Name', ['Average ' y_label_text], 'Position', [ 100, 100, 800, 600 ]);
+
+n_methods = length(methods);
+n_metrics = length(current_metrics);
+y_data = zeros(n_methods, n_metrics);
+
+    for i = 1:n_methods
+        if ~isempty(results(i).avg)
+            for j = 1:n_metrics
+                if ismember(current_metrics{j}, results(i).avg.Properties.VariableNames)
+                    y_data(i, j) = results(i).avg.(current_metrics{j});
+                end
+            end
+        end
+    end
+    
+    b = bar(y_data');
+    
+    % Styling
+    set(gca, 'XTickLabel', strrep(current_metrics, '_', '-'), 'FontSize', 12);
+    ylabel(y_label_text, 'FontSize', 14);
+    title(['Average ' y_label_text ' Comparison'], 'FontSize', 16);
+    legend(methods, 'Location', 'bestoutside', 'FontSize', 12);
+    grid on;
+    
+    % Add values on top of bars
+    for i = 1:n_metrics
+        for j = 1:n_methods
+            % Calculate position
+            x_pos = i + (j - n_methods/2 - 0.5) * (0.8/n_methods);
+            y_pos = y_data(j, i);
+            text(x_pos, y_pos, sprintf('%.2f', y_pos), ...
+                'HorizontalAlignment', 'center', ...
+                'VerticalAlignment', 'bottom', ...
+                'FontSize', 8, 'Rotation', 90);
+        end
+    end
+end
+
+% Plot 2: Comparison across different Scenarios (Scenes) for CPSNR_S0
+% This corresponds to "different scenarios"
+target_metric = 'CPSNR_S0';
+figure('Name', [target_metric ' per Scene'], 'Position', [150, 150, 1200, 600]);
+
+% Get common scenes (excluding Average)
+scenes = results(1).T.Scene;
+scenes = scenes(~strcmp(scenes, 'Average'));
+n_scenes = length(scenes);
+
+y_data_scenes = zeros(n_methods, n_scenes);
+
+for i = 1:n_methods
+    for j = 1:n_scenes
+        scene_name = scenes{j};
+        row_idx = find(strcmp(results(i).T.Scene, scene_name));
+        if ~isempty(row_idx)
+            y_data_scenes(i, j) = results(i).T.(target_metric)(row_idx);
+        else
+            y_data_scenes(i, j) = NaN;
+        end
+    end
+end
+
+b = bar(y_data_scenes');
+
+% Styling
+set(gca, 'XTick', 1:n_scenes);
+set(gca, 'XTickLabel', scenes, 'XTickLabelRotation', 45, 'FontSize', 10);
+ylabel('CPSNR S0 (dB)', 'FontSize', 14);
+title([target_metric ' Comparison across Scenes'], 'FontSize', 16);
+legend(methods, 'Location', 'bestoutside', 'FontSize', 12);
+grid on;
+
+fprintf('Plots generated.\n');

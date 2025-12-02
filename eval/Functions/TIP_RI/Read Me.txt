@@ -1,0 +1,37 @@
+This package includes the implementation of
+ 'Residual Interpolation for color image demosaicking'. 
+
+This code is available only for reserch purpose.
+If you use this code for future publications,
+please cite the following paper.
+
+Daisuke Kiku, Yusuke Monno, Masayuki Tanaka, and Masatoshi Okutomi,
+'Residual Interpolation for color image demosaicking',
+International Conference of Image Processing 2013.
+
+Demo script
+  run.m
+
+Main funtion
+  rgb_dem = demosaick(rgb, pattern, sigma)
+
+   Input
+    - rgb		: full RGB image
+    - pattern	: mosaic pattern 
+                    default : 'grbg'
+                    others  : 'rggb','gbrg','bggr'	
+    - sigma		: standard deviation of gaussian filter(default : 1)
+                    * For Kodak image data set, 1e8 works well.
+
+   Output 
+    - rgb_dem   : result image
+
+---------------------------------------------------------------------------
+
+Project page
+    http://www.ok.ctrl.titech.ac.jp/res/DM/RI.html
+
+Copyright (C) 2013 Daisuke Kiku. All rights reserved.
+dkiku@ok.ctrl.titech.ac.jp 
+
+June 23, 2013.
